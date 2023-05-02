@@ -1,0 +1,42 @@
+version: '3'
+
+services:
+
+    symfony:
+        container_name: symfony-mercure-demo-symfony
+        build: ./
+        restart: unless-stopped
+        working_dir: /opt/project
+#        env_file:
+#            - ./.env.local
+        ports:
+            - "8000:80"
+        volumes:
+            - ./:/opt/project:cached
+            # Just Containers - S6 Overlay
+            - ./docker/nginx/default.conf:/etc/nginx/sites-enabled/default
+            - ./docker/s6-overlay/services.d/boot-init-001-php-fpm:/etc/services.d/boot-init-001-php-fpm
+            - ./docker/s6-overlay/services.d/boot-init-002-nginx:/etc/services.d/boot-init-002-nginx
+        depends_on:
+            - mercure
+
+    mercure:
+        container_name: symfony-mercure-demo-mercure
+        image: dunglas/mercure:latest
+        command: /usr/bin/caddy run --config /etc/caddy/Caddyfile.dev
+        restart: unless-stopped
+        environment:
+            SERVER_NAME: ':80'
+            MERCURE_PUBLISHER_JWT_KEY: '!ChangeThisMercureHubJWTSecretKey!'
+            MERCURE_SUBSCRIBER_JWT_KEY: '!ChangeThisMercureHubJWTSecretKey!'
+            # Set the URL of your Symfony project (without trailing slash!) as value of the cors_origins directive
+            MERCURE_EXTRA_DIRECTIVES: |
+                cors_origins http://localhost:8000
+#        env_file:
+#            - ./.env.local
+        ports:
+            - "8080:80"
+            - "8443:443"
+        volumes:
+            - ./docker/mercure/data:/data
+            - ./docker/mercure/config:/config
