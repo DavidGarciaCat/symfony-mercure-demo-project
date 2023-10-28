@@ -1,6 +1,7 @@
 up:
 
 	docker-compose up --build -d
+	docker-compose exec symfony composer install
 
 down:
 
